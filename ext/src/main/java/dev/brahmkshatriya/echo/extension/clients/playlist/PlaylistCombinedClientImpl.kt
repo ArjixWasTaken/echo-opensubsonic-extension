@@ -24,7 +24,7 @@ class PlaylistCombinedClientImpl : PlaylistCombinedClient {
     // PlaylistClient implementation
 
     override suspend fun loadPlaylist(playlist: Playlist): Playlist {
-        return getPlaylist(playlist.id).toPlaylist()
+        return getPlaylist(playlist.id, fresh = true).toPlaylist()
     }
 
     override suspend fun loadTracks(playlist: Playlist): Feed<Track> {
@@ -232,21 +232,22 @@ class PlaylistCombinedClientImpl : PlaylistCombinedClient {
 
     companion object {
         // Cached, as Echo loads a playlist and its tracks separately
-        suspend fun getPlaylist(id: String): PlaylistDto = cached("getPlaylist:$id") {
-            val playlistData = runRequest(
-                authenticatedRequest(
-                    endpoint = "getPlaylist",
-                    parameters = listOf(
-                        "id" to id,
+        suspend fun getPlaylist(id: String, fresh: Boolean = false): PlaylistDto =
+            cached("getPlaylist:$id", fresh) {
+                val playlistData = runRequest(
+                    authenticatedRequest(
+                        endpoint = "getPlaylist",
+                        parameters = listOf(
+                            "id" to id,
+                        ),
                     ),
-                ),
-            ).parseAs<GetPlaylistDto>().subsonicResponse
-            if (playlistData.status != "ok") {
-                throwOnError(playlistData.error)
-            }
+                ).parseAs<GetPlaylistDto>().subsonicResponse
+                if (playlistData.status != "ok") {
+                    throwOnError(playlistData.error)
+                }
 
-            playlistData.playlist!!
-        }
+                playlistData.playlist!!
+            }
 
         suspend fun getPlaylists(): List<Playlist> {
             val playlistsData = runRequest(

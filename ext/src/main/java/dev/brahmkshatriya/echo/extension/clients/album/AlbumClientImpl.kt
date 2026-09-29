@@ -19,7 +19,7 @@ import dev.brahmkshatriya.echo.extension.service.request.RequestService.throwOnE
 
 class AlbumClientImpl : AlbumClient {
     override suspend fun loadAlbum(album: Album): Album {
-        return getAlbum(album.id).toAlbum()
+        return getAlbum(album.id, fresh = true).toAlbum()
     }
 
     override suspend fun loadTracks(album: Album): Feed<Track>? {
@@ -28,7 +28,8 @@ class AlbumClientImpl : AlbumClient {
 
     override suspend fun loadFeed(album: Album): Feed<Shelf>? {
         val artist = album.artists.firstOrNull() ?: return null
-        val otherAlbums = getArtist(artist.id).album?.map { it.toAlbum() } ?: return null
+        val otherAlbums =
+            getArtist(artist.id, fresh = true).album?.map { it.toAlbum() } ?: return null
 
         return concurrentFeed(
             {
@@ -44,21 +45,22 @@ class AlbumClientImpl : AlbumClient {
 
     companion object {
         // Cached, as Echo loads an album, its tracks and whether it's liked separately
-        suspend fun getAlbum(id: String): AlbumDto = cached("getAlbum:$id") {
-            val albumData = runRequest(
-                authenticatedRequest(
-                    endpoint = "getAlbum",
-                    parameters = listOf(
-                        "id" to id,
+        suspend fun getAlbum(id: String, fresh: Boolean = false): AlbumDto =
+            cached("getAlbum:$id", fresh) {
+                val albumData = runRequest(
+                    authenticatedRequest(
+                        endpoint = "getAlbum",
+                        parameters = listOf(
+                            "id" to id,
+                        ),
                     ),
-                ),
-            ).parseAs<GetAlbumDto>().subsonicResponse
-            if (albumData.status != "ok") {
-                throwOnError(albumData.error)
-            }
+                ).parseAs<GetAlbumDto>().subsonicResponse
+                if (albumData.status != "ok") {
+                    throwOnError(albumData.error)
+                }
 
-            albumData.album!!
-        }
+                albumData.album!!
+            }
 
         suspend fun getAlbumList(type: AlbumListType, count: Int, offset: Int = 0): List<Album> {
             val albumListData = runRequest(
