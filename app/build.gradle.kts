@@ -32,10 +32,8 @@ val extAuthorUrl = project.property("extAuthorUrl")
 val extRepoUrl = project.property("extRepoUrl")
 val extUpdateUrl = project.property("extUpdateUrl")
 
-val gitHash = execute("git", "rev-parse", "HEAD").take(7)
-val gitCount = execute("git", "rev-list", "--count", "HEAD").toInt()
-val verCode = gitCount
-val verName = "v$gitHash"
+val verCode: Int by rootProject.extra
+val verName: String by rootProject.extra
 
 
 val outputDir = file("${layout.buildDirectory.asFile.get()}/generated/proguard")
@@ -102,7 +100,3 @@ android {
         }
     }
 }
-
-fun execute(vararg command: String): String = providers.exec {
-    commandLine(*command)
-}.standardOutput.asText.get().trim()

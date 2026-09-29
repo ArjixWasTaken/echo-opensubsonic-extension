@@ -8,9 +8,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # To create the release
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # The version includes the commit count
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -28,12 +32,13 @@ jobs:
 
       - name: Make Environment
         run: |
-          version=$( echo ${{ github.event.head_commit.id }} | cut -c1-7 )
-          echo "VERSION=v$version" >> $GITHUB_ENV
+          chmod +x ./gradlew
+          # Must match the extension's version name, which Echo compares with the release tag
+          version=$(./gradlew -q printVersionName | tail -n 1)
+          echo "VERSION=$version" >> $GITHUB_ENV
           echo -e "## ${{ env.NAME }}\n${{ github.event.head_commit.message }}" > commit.txt
           echo "APP_PATH=app/build/${{ env.TAG }}-$version.eapk" >> $GITHUB_ENV
           echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > $GITHUB_WORKSPACE/signing-key.jks
-          chmod +x ./gradlew
 
       - name: Build with Gradle
         run: |
