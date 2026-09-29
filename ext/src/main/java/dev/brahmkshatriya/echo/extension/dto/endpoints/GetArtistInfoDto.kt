@@ -15,7 +15,12 @@ data class GetArtistInfoDto(
         val status: String,
         val error: ErrorDto? = null,
 
-        val biography: String? = null,
-        val similarArtist: List<ArtistDto>? = null,
-    )
+        val artistInfo2: ArtistInfoDto? = null,
+    ) {
+        @Serializable
+        data class ArtistInfoDto(
+            val biography: String? = null,
+            val similarArtist: List<ArtistDto>? = null,
+        )
+    }
 }

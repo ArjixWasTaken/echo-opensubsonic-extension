@@ -42,7 +42,7 @@ class ArtistClientImpl : ArtistClient {
         }
 
         return artistData.artist!!.toArtist().copy(
-            bio = extraData.biography,
+            bio = extraData.artistInfo2?.biography,
         )
     }
 
@@ -109,7 +109,8 @@ class ArtistClientImpl : ArtistClient {
                     throwOnError(similarData.error)
                 }
                 val similar =
-                    similarData.similarArtist?.map { it.toArtist() } ?: return@concurrentFeed null
+                    similarData.artistInfo2?.similarArtist?.map { it.toArtist() }
+                        ?: return@concurrentFeed null
 
                 Shelf.Lists.Items(
                     id = "similar",
