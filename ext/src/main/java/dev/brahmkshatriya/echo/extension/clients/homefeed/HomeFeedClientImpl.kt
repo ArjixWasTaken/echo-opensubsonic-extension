@@ -34,7 +34,7 @@ class HomeFeedClientImpl : HomeFeedClient {
 
                 Shelf.Lists.Items(
                     id = "recentlyAdded",
-                    title = "Most recent additions",
+                    title = "Recently Added",
                     list = albumList,
                     more = albumListFull,
                     type = Shelf.Lists.Type.Linear,
