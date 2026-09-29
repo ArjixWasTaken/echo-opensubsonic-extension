@@ -19,7 +19,7 @@ data class GetRandomSongsDto(
     ) {
         @Serializable
         data class RandomSongDto(
-            val song: List<SongDto>,
+            val song: List<SongDto>? = null,
         )
     }
 }

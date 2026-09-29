@@ -19,7 +19,7 @@ data class GetGenresDto(
     ) {
         @Serializable
         data class GenresDto(
-            val genre: List<GenreDto>,
+            val genre: List<GenreDto>? = null,
         )
     }
 }

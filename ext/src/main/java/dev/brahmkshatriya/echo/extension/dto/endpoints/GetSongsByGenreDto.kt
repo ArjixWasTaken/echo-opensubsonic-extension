@@ -19,7 +19,7 @@ data class GetSongsByGenreDto(
     ) {
         @Serializable
         data class SongsByGenreDto(
-            val song: List<SongDto>,
+            val song: List<SongDto>? = null,
         )
     }
 }
