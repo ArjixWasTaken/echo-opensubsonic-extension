@@ -38,7 +38,6 @@ object RequestService {
     private val DEFAULT_HEADERS = Headers.Builder().build()
 
     private val rng = SecureRandom()
-    private val md5 = MessageDigest.getInstance("MD5")
     private val httpClient = OkHttpClient()
     val json = Json { ignoreUnknownKeys = true }
 
@@ -55,7 +54,8 @@ object RequestService {
     }
 
     private fun generateToken(password: String, salt: String): String {
-        return md5.digest((password + salt).toByteArray(UTF_8))
+        // MessageDigest isn't thread-safe and tokens are generated from concurrent requests
+        return MessageDigest.getInstance("MD5").digest((password + salt).toByteArray(UTF_8))
             .joinToString("") {
                 "%02x".format(it)
             }

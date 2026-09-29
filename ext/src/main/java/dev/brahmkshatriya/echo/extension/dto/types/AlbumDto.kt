@@ -17,7 +17,7 @@ data class AlbumDto(
     val artists: List<ArtistDto>? = null,
     val songCount: Long? = null,
     val duration: Long? = null, // In seconds
-    val releaseData: DateDto? = null,
+    val releaseDate: DateDto? = null,
     val year: Int? = null,
     val recordLabels: List<RecordLabelDto>? = null,
     val explicitStatus: String? = null,
@@ -55,8 +55,8 @@ data class AlbumDto(
             artists = artists?.map { it.toArtist() } ?: emptyList(),
             trackCount = songCount,
             duration = duration?.times(1000),
-            releaseDate = releaseData?.let {
-                Date(year = it.year, month = it.month, day = it.day)
+            releaseDate = releaseDate?.year?.let {
+                Date(year = it, month = releaseDate.month, day = releaseDate.day)
             } ?: year?.let {
                 Date(year = it)
             },

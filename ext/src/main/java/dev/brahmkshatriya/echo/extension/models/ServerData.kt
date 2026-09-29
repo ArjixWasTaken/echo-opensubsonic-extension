@@ -19,7 +19,8 @@ data class ServerData(
 
         companion object {
             val ID_TO_NAME: Map<String, Extension> = entries.associateBy { it.id }
-            val EMPTY: EnumSet<Extension> = EnumSet.noneOf(Extension::class.java)
+            // A new set each time, as callers fill it in
+            fun empty(): EnumSet<Extension> = EnumSet.noneOf(Extension::class.java)
 
             fun serialize(extensions: EnumSet<Extension>?): String? {
                 return extensions?.joinToString(",") { it.id }
@@ -27,7 +28,7 @@ data class ServerData(
 
             fun deserialize(s: String?): EnumSet<Extension>? {
                 return s?.let { str ->
-                    Extension.EMPTY.apply {
+                    empty().apply {
                         if (str.isNotBlank()) {
                             str.split(",")
                                 .map { it.trim() }

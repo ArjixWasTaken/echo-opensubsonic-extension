@@ -13,6 +13,7 @@ object SettingsSession {
 
     val searchResults get() = current?.getInt("search_results") ?: 20
     val forceGetRequests get() = current?.getBoolean("force_get_requests") ?: false
+    val scrobble get() = current?.getBoolean("scrobble") ?: true
 
     val items: List<Setting> = listOf(
         SettingCategory(
@@ -25,6 +26,14 @@ object SettingsSession {
                     summary = "Initiates a rescan of the media libraries on the server, if the " +
                             "user has permission to do so.",
                     onClick = { startScan() },
+                ),
+                SettingSwitch(
+                    title = "Scrobble plays",
+                    key = "scrobble",
+                    summary = "Report played tracks to the server, which updates play counts and " +
+                            "recently played, and forwards them to Last.fm or ListenBrainz if " +
+                            "the server is set up to.",
+                    defaultValue = true,
                 ),
             )
         ),

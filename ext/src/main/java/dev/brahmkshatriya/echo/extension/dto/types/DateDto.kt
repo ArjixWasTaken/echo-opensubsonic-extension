@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DateDto(
-    val year: Int,
-    val month: Int,
-    val day: Int,
+    val year: Int? = null,
+    val month: Int? = null,
+    val day: Int? = null,
 )

@@ -7,9 +7,10 @@ Allows streaming music from Subsonic-compatible servers such as Navidrome.
 ## Planned features
 
 - [x] Playlist editing
-- [x] Genres in the home/search feed
+- [x] Genres in the search feed
 - [x] Music streaming improvements
 - [x] Better library feed
+- [x] Lyrics (synced and unsynced)
 - [ ] Feed appearance settings
 - [ ] Subsonic support
 
@@ -28,7 +29,7 @@ Allows streaming music from Subsonic-compatible servers such as Navidrome.
 
 1. **Download the Extension**:
     - Visit
-      the [latest release page](https://github.com/Sturdy7435/echo-opensubsonic-extension/releases/latest).
+      the [latest release page](https://github.com/ArjixWasTaken/echo-opensubsonic-extension/releases/latest).
     - Download the latest `.eapk` file of the OpenSubsonic extension.
 
 2. **Install the Extension**:

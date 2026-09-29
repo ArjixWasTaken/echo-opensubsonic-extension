@@ -164,7 +164,7 @@ class LoginClientImpl : LoginClient.CustomInput {
             throwOnError(data.error)
         }
 
-        return ServerData.Extension.EMPTY.apply {
+        return ServerData.Extension.empty().apply {
             data.openSubsonicExtensions!!
                 .mapNotNull { ID_TO_NAME[it.name] }
                 .forEach { add(it) }

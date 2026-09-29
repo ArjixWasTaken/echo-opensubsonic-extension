@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class ShareDto(
     val id: String,
     val url: String,
-    val description: String?,
+    val description: String? = null,
 )
