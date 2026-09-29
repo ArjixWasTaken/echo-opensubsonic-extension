@@ -22,24 +22,7 @@ class HomeFeedClientImpl : HomeFeedClient {
 
     override suspend fun loadHomeFeed(): Feed<Shelf> {
         return concurrentFeed(
-            {
-                val albumList = getAlbumList(AlbumListType.Newest, listSize)
-                val albumListFull = continuousFeed(pageSize) { offset ->
-                    getAlbumList(
-                        type = AlbumListType.Newest,
-                        count = pageSize,
-                        offset = offset,
-                    ).map { it.toShelf() }
-                }
-
-                Shelf.Lists.Items(
-                    id = "recentlyAdded",
-                    title = "Recently Added",
-                    list = albumList,
-                    more = albumListFull,
-                    type = Shelf.Lists.Type.Linear,
-                )
-            },
+            { getAlbumListShelf("recentlyAdded", "Recently Added", AlbumListType.Newest) },
             {
                 val trackList = getAllTracks(trackListSize)
                 val trackListFull = continuousFeed(pageSize) { offset ->
@@ -70,6 +53,9 @@ class HomeFeedClientImpl : HomeFeedClient {
                     type = Shelf.Lists.Type.Linear,
                 )
             },
+            { getAlbumListShelf("recentlyPlayed", "Recently Played", AlbumListType.Recent) },
+            { getAlbumListShelf("mostPlayed", "Most Played", AlbumListType.Frequent) },
+            { getAlbumListShelf("topRated", "Top Rated", AlbumListType.Highest) },
             {
                 val artistListFull = getArtists()
                 val artistList = artistListFull.shuffled().take(listSize)
@@ -83,6 +69,26 @@ class HomeFeedClientImpl : HomeFeedClient {
                     type = Shelf.Lists.Type.Linear,
                 )
             },
+        )
+    }
+
+    // Hidden when empty, e.g. nothing has been played or rated yet
+    private suspend fun getAlbumListShelf(id: String, title: String, type: AlbumListType): Shelf? {
+        val albumList = getAlbumList(type, listSize).ifEmpty { return null }
+        val albumListFull = continuousFeed(pageSize) { offset ->
+            getAlbumList(
+                type = type,
+                count = pageSize,
+                offset = offset,
+            ).map { it.toShelf() }
+        }
+
+        return Shelf.Lists.Items(
+            id = id,
+            title = title,
+            list = albumList,
+            more = albumListFull,
+            type = Shelf.Lists.Type.Linear,
         )
     }
 
