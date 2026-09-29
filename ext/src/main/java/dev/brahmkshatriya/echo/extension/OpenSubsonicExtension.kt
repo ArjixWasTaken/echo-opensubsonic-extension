@@ -13,8 +13,10 @@ import dev.brahmkshatriya.echo.common.clients.RadioClient
 import dev.brahmkshatriya.echo.common.clients.SearchFeedClient
 import dev.brahmkshatriya.echo.common.clients.ShareClient
 import dev.brahmkshatriya.echo.common.clients.TrackClient
+import dev.brahmkshatriya.echo.common.clients.TrackerMarkClient
 import dev.brahmkshatriya.echo.common.models.Lyrics
 import dev.brahmkshatriya.echo.common.models.Track
+import dev.brahmkshatriya.echo.common.models.TrackDetails
 import dev.brahmkshatriya.echo.extension.clients.album.AlbumClientImpl
 import dev.brahmkshatriya.echo.extension.clients.artist.ArtistClientImpl
 import dev.brahmkshatriya.echo.extension.clients.extension.ExtensionClientImpl
@@ -30,6 +32,7 @@ import dev.brahmkshatriya.echo.extension.clients.radio.RadioClientImpl
 import dev.brahmkshatriya.echo.extension.clients.searchfeed.SearchFeedClientImpl
 import dev.brahmkshatriya.echo.extension.clients.share.ShareClientImpl
 import dev.brahmkshatriya.echo.extension.clients.track.TrackClientImpl
+import dev.brahmkshatriya.echo.extension.clients.tracker.TrackerClientImpl
 
 class OpenSubsonicExtension :
     ExtensionClient by ExtensionClientImpl(),
@@ -49,13 +52,27 @@ class OpenSubsonicExtension :
     LikeClient by LikeClientImpl(),
     ShareClient by ShareClientImpl(),
 
-    // LyricsClient extends ExtensionClient, so delegating it would clash with ExtensionClientImpl
-    LyricsClient {
+    // These extend ExtensionClient, so delegating them would clash with ExtensionClientImpl
+    LyricsClient,
+    TrackerMarkClient {
     private val lyricsClient = LyricsClientImpl()
+    private val trackerClient = TrackerClientImpl()
 
     override suspend fun searchTrackLyrics(clientId: String, track: Track) =
         lyricsClient.searchTrackLyrics(track)
 
     override suspend fun loadLyrics(lyrics: Lyrics) =
         lyricsClient.loadLyrics(lyrics)
+
+    override suspend fun onTrackChanged(details: TrackDetails?) =
+        trackerClient.onTrackChanged(details)
+
+    // Scrobbling only needs to know when tracks change and count as played
+    override suspend fun onPlayingStateChanged(details: TrackDetails?, isPlaying: Boolean) {}
+
+    override suspend fun getMarkAsPlayedDuration(details: TrackDetails) =
+        trackerClient.getMarkAsPlayedDuration(details)
+
+    override suspend fun onMarkAsPlayed(details: TrackDetails) =
+        trackerClient.onMarkAsPlayed(details)
 }
