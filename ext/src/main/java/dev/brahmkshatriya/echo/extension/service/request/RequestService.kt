@@ -7,6 +7,7 @@ import dev.brahmkshatriya.echo.extension.clients.login.LoginClientImpl.Companion
 import dev.brahmkshatriya.echo.extension.dto.types.ErrorDto
 import dev.brahmkshatriya.echo.extension.models.ServerData
 import dev.brahmkshatriya.echo.extension.models.UserData
+import dev.brahmkshatriya.echo.extension.service.cache.ResponseCache
 import dev.brahmkshatriya.echo.extension.service.session.SettingsSession
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -166,10 +167,19 @@ object RequestService {
         }
     }
 
+    // Change data that cached responses include, e.g. whether an album is liked
+    private val WRITE_ENDPOINTS = setOf(
+        "star", "unstar", "createPlaylist", "updatePlaylist", "deletePlaylist",
+    )
+
     suspend fun runRequest(
         request: Request,
     ): Response {
-        return httpClient.newCall(request).await()
+        val response = httpClient.newCall(request).await()
+        if (request.url.pathSegments.last() in WRITE_ENDPOINTS) {
+            ResponseCache.clear()
+        }
+        return response
     }
 
     // UTILS
