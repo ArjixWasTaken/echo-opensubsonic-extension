@@ -7,6 +7,7 @@ import dev.brahmkshatriya.echo.extension.clients.login.LoginClientImpl.Companion
 import dev.brahmkshatriya.echo.extension.dto.types.ErrorDto
 import dev.brahmkshatriya.echo.extension.models.ServerData
 import dev.brahmkshatriya.echo.extension.models.UserData
+import dev.brahmkshatriya.echo.extension.service.cache.ResponseCache
 import dev.brahmkshatriya.echo.extension.service.session.SettingsSession
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -53,6 +54,14 @@ object RequestService {
         }
     }
 
+    // The same for every request of an account, see appendAuthParameters
+    private fun accountSalt(credentials: UserData): String {
+        return MessageDigest.getInstance("SHA-256")
+            .digest("${credentials.server?.url}|${credentials.username}".toByteArray(UTF_8))
+            .joinToString("") { "%02x".format(it) }
+            .take(16)
+    }
+
     private fun generateToken(password: String, salt: String): String {
         // MessageDigest isn't thread-safe and tokens are generated from concurrent requests
         return MessageDigest.getInstance("MD5").digest((password + salt).toByteArray(UTF_8))
@@ -61,9 +70,15 @@ object RequestService {
             }
     }
 
+    /**
+     * @param stableSalt whether the request needs the same URL every time, like cover art and
+     * streams that Echo loads and caches by URL itself. Their salt is then derived from the
+     * account instead of random, so the token and URL don't change between calls.
+     */
     private fun appendAuthParameters(
         parameters: List<Pair<String, String>> = emptyList(),
         credentials: UserData = getCurrentUser(),
+        stableSalt: Boolean = false,
     ): List<Pair<String, String>> {
         checkAuth(credentials)
 
@@ -74,7 +89,7 @@ object RequestService {
         }
 
         credentials.password!!.let {
-            val salt = generateSalt()
+            val salt = if (stableSalt) accountSalt(credentials) else generateSalt()
             val token = generateToken(it, salt)
             return parameters + listOf(
                 "u" to credentials.username,
@@ -138,7 +153,9 @@ object RequestService {
         needsGet: Boolean = false,
         credentials: UserData = getCurrentUser(),
     ): Request {
-        val params: List<Pair<String, String>> = appendAuthParameters(parameters, credentials)
+        // Requests that need GET are the ones handed to Echo to load itself
+        val params: List<Pair<String, String>> =
+            appendAuthParameters(parameters, credentials, stableSalt = needsGet)
         val server: ServerData = credentials.server!!
         val supportsPost: Boolean =
             server.extensions?.contains(ServerData.Extension.FormPost) ?: false
@@ -150,10 +167,19 @@ object RequestService {
         }
     }
 
+    // Change data that cached responses include, e.g. whether an album is liked
+    private val WRITE_ENDPOINTS = setOf(
+        "star", "unstar", "createPlaylist", "updatePlaylist", "deletePlaylist",
+    )
+
     suspend fun runRequest(
         request: Request,
     ): Response {
-        return httpClient.newCall(request).await()
+        val response = httpClient.newCall(request).await()
+        if (request.url.pathSegments.last() in WRITE_ENDPOINTS) {
+            ResponseCache.clear()
+        }
+        return response
     }
 
     // UTILS

@@ -10,6 +10,8 @@ import dev.brahmkshatriya.echo.extension.dto.endpoints.DeletePlaylistDto
 import dev.brahmkshatriya.echo.extension.dto.endpoints.GetPlaylistDto
 import dev.brahmkshatriya.echo.extension.dto.endpoints.GetPlaylistsDto
 import dev.brahmkshatriya.echo.extension.dto.endpoints.UpdatePlaylistDto
+import dev.brahmkshatriya.echo.extension.dto.types.PlaylistDto
+import dev.brahmkshatriya.echo.extension.service.cache.ResponseCache.cached
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.authenticatedRequest
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.parseAs
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.runRequest
@@ -22,35 +24,11 @@ class PlaylistCombinedClientImpl : PlaylistCombinedClient {
     // PlaylistClient implementation
 
     override suspend fun loadPlaylist(playlist: Playlist): Playlist {
-        val playlistData = runRequest(
-            authenticatedRequest(
-                endpoint = "getPlaylist",
-                parameters = listOf(
-                    "id" to playlist.id,
-                ),
-            ),
-        ).parseAs<GetPlaylistDto>().subsonicResponse
-        if (playlistData.status != "ok") {
-            throwOnError(playlistData.error)
-        }
-
-        return playlistData.playlist!!.toPlaylist()
+        return getPlaylist(playlist.id, fresh = true).toPlaylist()
     }
 
     override suspend fun loadTracks(playlist: Playlist): Feed<Track> {
-        val playlistData = runRequest(
-            authenticatedRequest(
-                endpoint = "getPlaylist",
-                parameters = listOf(
-                    "id" to playlist.id,
-                ),
-            ),
-        ).parseAs<GetPlaylistDto>().subsonicResponse
-        if (playlistData.status != "ok") {
-            throwOnError(playlistData.error)
-        }
-
-        return (playlistData.playlist!!.entry?.map { it.toTrack() } ?: emptyList()).toFeed()
+        return (getPlaylist(playlist.id).entry?.map { it.toTrack() } ?: emptyList()).toFeed()
     }
 
     // There is nothing to show under the list of songs
@@ -253,6 +231,24 @@ class PlaylistCombinedClientImpl : PlaylistCombinedClient {
     }
 
     companion object {
+        // Cached, as Echo loads a playlist and its tracks separately
+        suspend fun getPlaylist(id: String, fresh: Boolean = false): PlaylistDto =
+            cached("getPlaylist:$id", fresh) {
+                val playlistData = runRequest(
+                    authenticatedRequest(
+                        endpoint = "getPlaylist",
+                        parameters = listOf(
+                            "id" to id,
+                        ),
+                    ),
+                ).parseAs<GetPlaylistDto>().subsonicResponse
+                if (playlistData.status != "ok") {
+                    throwOnError(playlistData.error)
+                }
+
+                playlistData.playlist!!
+            }
+
         suspend fun getPlaylists(): List<Playlist> {
             val playlistsData = runRequest(
                 authenticatedRequest(

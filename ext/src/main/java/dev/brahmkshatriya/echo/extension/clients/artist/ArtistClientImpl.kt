@@ -7,8 +7,11 @@ import dev.brahmkshatriya.echo.common.models.Feed.Companion.toFeed
 import dev.brahmkshatriya.echo.common.models.Shelf
 import dev.brahmkshatriya.echo.extension.dto.endpoints.GetArtistDto
 import dev.brahmkshatriya.echo.extension.dto.endpoints.GetArtistInfoDto
+import dev.brahmkshatriya.echo.extension.dto.endpoints.GetArtistInfoDto.SubsonicResponseDto.ArtistInfoDto
 import dev.brahmkshatriya.echo.extension.dto.endpoints.GetArtistsDto
 import dev.brahmkshatriya.echo.extension.dto.endpoints.GetTopSongsDto
+import dev.brahmkshatriya.echo.extension.dto.types.ArtistDto
+import dev.brahmkshatriya.echo.extension.service.cache.ResponseCache.cached
 import dev.brahmkshatriya.echo.extension.service.feed.FeedUtils.concurrentFeed
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.authenticatedRequest
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.parseAs
@@ -17,32 +20,8 @@ import dev.brahmkshatriya.echo.extension.service.request.RequestService.throwOnE
 
 class ArtistClientImpl : ArtistClient {
     override suspend fun loadArtist(artist: Artist): Artist {
-        val artistData = runRequest(
-            authenticatedRequest(
-                endpoint = "getArtist",
-                parameters = listOf(
-                    "id" to artist.id,
-                ),
-            ),
-        ).parseAs<GetArtistDto>().subsonicResponse
-        if (artistData.status != "ok") {
-            throwOnError(artistData.error)
-        }
-
-        val extraData = runRequest(
-            authenticatedRequest(
-                endpoint = "getArtistInfo2",
-                parameters = listOf(
-                    "id" to artist.id,
-                ),
-            ),
-        ).parseAs<GetArtistInfoDto>().subsonicResponse
-        if (extraData.status != "ok") {
-            throwOnError(extraData.error)
-        }
-
-        return artistData.artist!!.toArtist().copy(
-            bio = extraData.artistInfo2?.biography,
+        return getArtist(artist.id, fresh = true).toArtist().copy(
+            bio = getArtistInfo(artist.id, fresh = true)?.biography,
         )
     }
 
@@ -75,19 +54,8 @@ class ArtistClientImpl : ArtistClient {
                 )
             },
             {
-                val albumsData = runRequest(
-                    authenticatedRequest(
-                        endpoint = "getArtist",
-                        parameters = listOf(
-                            "id" to artist.id,
-                        ),
-                    ),
-                ).parseAs<GetArtistDto>().subsonicResponse
-                if (albumsData.status != "ok") {
-                    throwOnError(albumsData.error)
-                }
                 val albums =
-                    albumsData.artist?.album?.map { it.toAlbum() } ?: return@concurrentFeed null
+                    getArtist(artist.id).album?.map { it.toAlbum() } ?: return@concurrentFeed null
 
                 Shelf.Lists.Items(
                     id = "albums",
@@ -97,20 +65,8 @@ class ArtistClientImpl : ArtistClient {
                 )
             },
             {
-                val similarData = runRequest(
-                    authenticatedRequest(
-                        endpoint = "getArtistInfo2",
-                        parameters = listOf(
-                            "id" to artist.id,
-                        ),
-                    ),
-                ).parseAs<GetArtistInfoDto>().subsonicResponse
-                if (similarData.status != "ok") {
-                    throwOnError(similarData.error)
-                }
-                val similar =
-                    similarData.artistInfo2?.similarArtist?.map { it.toArtist() }
-                        ?: return@concurrentFeed null
+                val similar = getArtistInfo(artist.id)?.similarArtist?.map { it.toArtist() }
+                    ?: return@concurrentFeed null
 
                 Shelf.Lists.Items(
                     id = "similar",
@@ -123,6 +79,41 @@ class ArtistClientImpl : ArtistClient {
     }
 
     companion object {
+        // Cached, as Echo loads an artist, their feed and whether they're followed separately
+        suspend fun getArtist(id: String, fresh: Boolean = false): ArtistDto =
+            cached("getArtist:$id", fresh) {
+                val artistData = runRequest(
+                    authenticatedRequest(
+                        endpoint = "getArtist",
+                        parameters = listOf(
+                            "id" to id,
+                        ),
+                    ),
+                ).parseAs<GetArtistDto>().subsonicResponse
+                if (artistData.status != "ok") {
+                    throwOnError(artistData.error)
+                }
+
+                artistData.artist!!
+            }
+
+        suspend fun getArtistInfo(id: String, fresh: Boolean = false): ArtistInfoDto? =
+            cached("getArtistInfo2:$id", fresh) {
+                val infoData = runRequest(
+                    authenticatedRequest(
+                        endpoint = "getArtistInfo2",
+                        parameters = listOf(
+                            "id" to id,
+                        ),
+                    ),
+                ).parseAs<GetArtistInfoDto>().subsonicResponse
+                if (infoData.status != "ok") {
+                    throwOnError(infoData.error)
+                }
+
+                infoData.artistInfo2
+            }
+
         suspend fun getArtists(): List<Artist> {
             val artistsData = runRequest(
                 authenticatedRequest(

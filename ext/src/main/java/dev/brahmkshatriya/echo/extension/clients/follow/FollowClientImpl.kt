@@ -3,7 +3,7 @@ package dev.brahmkshatriya.echo.extension.clients.follow
 import dev.brahmkshatriya.echo.common.clients.FollowClient
 import dev.brahmkshatriya.echo.common.models.Artist
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
-import dev.brahmkshatriya.echo.extension.dto.endpoints.GetArtistDto
+import dev.brahmkshatriya.echo.extension.clients.artist.ArtistClientImpl.Companion.getArtist
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.authenticatedRequest
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.parseAs
 import dev.brahmkshatriya.echo.extension.service.request.RequestService.runRequest
@@ -33,19 +33,7 @@ class FollowClientImpl : FollowClient {
             return false
         }
 
-        val artistData = runRequest(
-            authenticatedRequest(
-                endpoint = "getArtist",
-                parameters = listOf(
-                    "id" to item.id,
-                ),
-            ),
-        ).parseAs<GetArtistDto>().subsonicResponse
-        if (artistData.status != "ok") {
-            throwOnError(artistData.error)
-        }
-
-        return artistData.artist!!.starred != null
+        return getArtist(item.id).starred != null
     }
 
     /*

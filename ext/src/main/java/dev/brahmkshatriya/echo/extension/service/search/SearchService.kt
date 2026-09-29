@@ -16,6 +16,8 @@ object SearchService {
         albumCount: Int,
         artistCount: Int,
         trackOffset: Int = 0,
+        albumOffset: Int = 0,
+        artistOffset: Int = 0,
     ): SearchResult {
         val searchData = runRequest(
             authenticatedRequest(
@@ -25,7 +27,9 @@ object SearchService {
                     "songCount" to trackCount.toString(),
                     "songOffset" to trackOffset.toString(),
                     "albumCount" to albumCount.toString(),
+                    "albumOffset" to albumOffset.toString(),
                     "artistCount" to artistCount.toString(),
+                    "artistOffset" to artistOffset.toString(),
                 ),
             ),
         ).parseAs<SearchDto>().subsonicResponse

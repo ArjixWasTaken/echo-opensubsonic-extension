@@ -42,6 +42,16 @@ object FeedUtils {
         pageSize: Int,
         callback: suspend (offset: Int) -> List<Shelf>,
     ): Feed<Shelf> {
+        return continuousPages(pageSize, callback).toFeed()
+    }
+
+    /**
+     * Like [continuousFeed], but returns the paged data itself, e.g. for a tab of a feed.
+     */
+    fun continuousPages(
+        pageSize: Int,
+        callback: suspend (offset: Int) -> List<Shelf>,
+    ): PagedData<Shelf> {
         return PagedData.Continuous { continuation ->
             val contInt = continuation?.toIntOrNull() ?: 0
             val things: List<Shelf> = callback(contInt)
@@ -50,6 +60,6 @@ object FeedUtils {
                 things,
                 if (things.size < pageSize) null else (contInt + pageSize).toString(),
             )
-        }.toFeed()
+        }
     }
 }
