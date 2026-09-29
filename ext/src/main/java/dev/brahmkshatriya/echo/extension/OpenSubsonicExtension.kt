@@ -8,10 +8,13 @@ import dev.brahmkshatriya.echo.common.clients.HomeFeedClient
 import dev.brahmkshatriya.echo.common.clients.LibraryFeedClient
 import dev.brahmkshatriya.echo.common.clients.LikeClient
 import dev.brahmkshatriya.echo.common.clients.LoginClient
+import dev.brahmkshatriya.echo.common.clients.LyricsClient
 import dev.brahmkshatriya.echo.common.clients.RadioClient
 import dev.brahmkshatriya.echo.common.clients.SearchFeedClient
 import dev.brahmkshatriya.echo.common.clients.ShareClient
 import dev.brahmkshatriya.echo.common.clients.TrackClient
+import dev.brahmkshatriya.echo.common.models.Lyrics
+import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.extension.clients.album.AlbumClientImpl
 import dev.brahmkshatriya.echo.extension.clients.artist.ArtistClientImpl
 import dev.brahmkshatriya.echo.extension.clients.extension.ExtensionClientImpl
@@ -20,6 +23,7 @@ import dev.brahmkshatriya.echo.extension.clients.homefeed.HomeFeedClientImpl
 import dev.brahmkshatriya.echo.extension.clients.libraryfeed.LibraryFeedClientImpl
 import dev.brahmkshatriya.echo.extension.clients.like.LikeClientImpl
 import dev.brahmkshatriya.echo.extension.clients.login.LoginClientImpl
+import dev.brahmkshatriya.echo.extension.clients.lyrics.LyricsClientImpl
 import dev.brahmkshatriya.echo.extension.clients.playlist.PlaylistCombinedClient
 import dev.brahmkshatriya.echo.extension.clients.playlist.PlaylistCombinedClientImpl
 import dev.brahmkshatriya.echo.extension.clients.radio.RadioClientImpl
@@ -43,4 +47,15 @@ class OpenSubsonicExtension :
 
     FollowClient by FollowClientImpl(),
     LikeClient by LikeClientImpl(),
-    ShareClient by ShareClientImpl()
+    ShareClient by ShareClientImpl(),
+
+    // LyricsClient extends ExtensionClient, so delegating it would clash with ExtensionClientImpl
+    LyricsClient {
+    private val lyricsClient = LyricsClientImpl()
+
+    override suspend fun searchTrackLyrics(clientId: String, track: Track) =
+        lyricsClient.searchTrackLyrics(track)
+
+    override suspend fun loadLyrics(lyrics: Lyrics) =
+        lyricsClient.loadLyrics(lyrics)
+}
